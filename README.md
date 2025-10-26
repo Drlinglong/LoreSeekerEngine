@@ -20,8 +20,9 @@
 1.  **安装Python依赖**:
     确保你已经安装了Python 3.10+。然后，在项目根目录打开命令行，运行以下命令来安装所有必需的库：
     ```bash
-    pip install -r requirements.txt
+    pip install -r requirements-offline.txt
     ```
+    如果在此之后运行脚本仍然提示缺少某个模块（例如 `ModuleNotFoundError: No module named 'some_package'`），您可以使用 `pip install some_package` 来手动安装它。
 
 2.  **设置API密钥**:
     本项目需要使用多个外部大语言模型API。请将以下API密钥设置为您的系统环境变量。脚本会自动读取它们。
