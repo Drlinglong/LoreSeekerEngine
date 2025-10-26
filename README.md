@@ -28,7 +28,7 @@
 
     - `XAI_API_KEY`: 用于知识图谱构建 (本项目配置为使用 xAI 的 `grok-4-fast` 模型)。
     - `OPENAI_API_KEY`: 用于文本向量化 (推荐使用OpenAI的`text-embedding-3-large`模型)。
-    - `JINA_API_KEY`: 用于文本重排序 (推荐使用Jina Rerank API)。
+    - `MODELSCOPE_API_KEY`: 用于文本重排序 (本项目配置为使用魔搭社区的 Jina Reranker API)。
     - **[用于问答的LLM]**: 您还需要一个用于最终问答的LLM API密钥，请根据您在服务器配置中选择的模型（如硅基流动、魔搭等）设置相应的环境变量。
 
 ### 步骤 2: 数据预处理 (构建知识索引)
