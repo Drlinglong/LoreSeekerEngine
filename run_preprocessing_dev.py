@@ -5,7 +5,7 @@ import asyncio
 import httpx
 from openai import AsyncOpenAI
 from lightrag.lightrag import LightRAG
-from lightrag.core.types import Document, Embedder
+from lightrag.core import Document, Embedder
 from lightrag.kg.shared_storage import initialize_pipeline_status
 import json_repair
 
