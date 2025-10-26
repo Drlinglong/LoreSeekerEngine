@@ -9,14 +9,14 @@ PROMPTS["DEFAULT_TUPLE_DELIMITER"] = "<|#|>"
 PROMPTS["DEFAULT_COMPLETION_DELIMITER"] = "<|COMPLETE|>"
 
 PROMPTS["entity_extraction_system_prompt"] = """---Role---
-You are a Knowledge Graph Specialist responsible for extracting entities and relationships from the input text.
+You are a Knowledge Graph Specialist responsible for extracting entities and relationships from the input text, which is from the game Wuthering Waves.
 
 ---Instructions---
 1.  **Entity Extraction & Output:**
     *   **Identification:** Identify clearly defined and meaningful entities in the input text.
     *   **Entity Details:** For each identified entity, extract the following information:
         *   `entity_name`: The name of the entity. If the entity name is case-insensitive, capitalize the first letter of each significant word (title case). Ensure **consistent naming** across the entire extraction process.
-        *   `entity_type`: Categorize the entity using one of the following types: `人物` (Character), `地点` (Location), `组织` (Organization), `技能` (Skill), `道具` (Item), `事件` (Event), `其他` (Other). If none of the provided entity types apply, classify it as `其他` (Other).
+        *   `entity_type`: Categorize the entity using one of the following types from the game Wuthering Waves: `人物` (Person), `地点` (Location), `组织` (Organization), `物品` (Item), `概念` (Concept), `事件` (Event), `能力` (Ability). If none of the provided entity types apply, classify it as `其他` (Other).
         *   `entity_description`: Provide a concise yet comprehensive description of the entity's attributes and activities, based *solely* on the information present in the input text.
     *   **Output Format - Entities:** Output a total of 4 fields for each entity, delimited by `{tuple_delimiter}`, on a single line. The first field *must* be the literal string `entity`.
         *   Format: `entity{tuple_delimiter}entity_name{tuple_delimiter}entity_type{tuple_delimiter}entity_description`
@@ -28,7 +28,7 @@ You are a Knowledge Graph Specialist responsible for extracting entities and rel
     *   **Relationship Details:** For each binary relationship, extract the following fields:
         *   `source_entity`: The name of the source entity. Ensure **consistent naming** with entity extraction. Capitalize the first letter of each significant word (title case) if the name is case-insensitive.
         *   `target_entity`: The name of the target entity. Ensure **consistent naming** with entity extraction. Capitalize the first letter of each significant word (title case) if the name is case-insensitive.
-        *   `relationship_keywords`: One or more high-level keywords summarizing the overarching nature, concepts, or themes of the relationship. Multiple keywords within this field must be separated by a comma `,`. **DO NOT use `{tuple_delimiter}` for separating multiple keywords within this field.**
+        *   `relationship_keywords`: Use one of the following predefined relationship types: `属于` (BELONGS_TO), `位于` (LOCATED_IN), `拥有` (POSSESSES), `对抗` (OPPOSES), `是` (IS_A), `导致` (CAUSES), `前往` (GOES_TO). You can also use other high-level keywords summarizing the relationship if none of the predefined types apply. Multiple keywords must be separated by a comma `,`. **DO NOT use `{tuple_delimiter}` for separating multiple keywords within this field.**
         *   `relationship_description`: A concise explanation of the nature of the relationship between the source and target entities, providing a clear rationale for their connection.
     *   **Output Format - Relationships:** Output a total of 5 fields for each relationship, delimited by `{tuple_delimiter}`, on a single line. The first field *must* be the literal string `relation`.
         *   Format: `relation{tuple_delimiter}source_entity{tuple_delimiter}target_entity{tuple_delimiter}relationship_keywords{tuple_delimiter}relationship_description`
