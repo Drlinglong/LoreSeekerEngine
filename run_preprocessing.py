@@ -6,14 +6,15 @@ import httpx
 import re
 from openai import AsyncOpenAI
 from lightrag.lightrag import LightRAG
-from lightrag.core.types import Document, Embedder
+from lightrag.utils import EmbeddingFunc
 from lightrag.kg.shared_storage import initialize_pipeline_status
+import json_repair
 
 # --- Configuration ---
-# API keys are expected to be set as environment variables
+# API keys are expected to be set as environment variables for development
 XAI_API_KEY = os.environ.get("XAI_API_KEY")
-MODELSCOPE_API_KEY = os.environ.get("MODELSCOPE_API_KEY") # Used for reranking
-OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY") # Used for embeddings
+JINA_API_KEY = os.environ.get("JINA_API_KEY") # For developer's reranker
+OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY") # For embeddings
 
 # Directory where the precomputed data will be stored
 WORKING_DIR = "./game_data_index"
@@ -30,10 +31,10 @@ async def get_xai_llm_func():
     xai_client = AsyncOpenAI(
         api_key=XAI_API_KEY,
         base_url="https://api.x.ai/v1",
-        timeout=httpx.AsyncTimeout(3600.0),
+        timeout=httpx.Timeout(3600.0),
     )
 
-    async def llm_model_func(prompt: str, system_prompt: str = None, history_messages: list = None, **kwargs) -> str:
+    async def llm_model_func(prompt: str, system_prompt: str = None, history_messages: list = None, hashing_kv=None, **kwargs) -> str:
         messages = []
         if system_prompt:
             messages.append({"role": "system", "content": system_prompt})
@@ -50,110 +51,103 @@ async def get_xai_llm_func():
 
     return llm_model_func
 
-# 2. Embedding function using OpenAI API
+# 2. Embedding function using SiliconFlow API
 def get_embedding_func():
-    if not OPENAI_API_KEY:
-        raise ValueError("OPENAI_API_KEY environment variable is not set for embeddings.")
+    SILICONFLOW_API_KEY = os.environ.get("SILICONFLOW_API_KEY")
+    if not SILICONFLOW_API_KEY:
+        raise ValueError("SILICONFLOW_API_KEY environment variable is not set for embeddings.")
 
-    openai_client = AsyncOpenAI(api_key=OPENAI_API_KEY)
+    sf_client = AsyncOpenAI(
+        api_key=SILICONFLOW_API_KEY,
+        base_url="https://api.siliconflow.cn/v1"
+    )
 
-    async def openai_embed_func(texts: list[str]) -> list[list[float]]:
-        response = await openai_client.embeddings.create(
-            model="text-embedding-3-large",
+    async def sf_embed_func(texts: list[str]) -> list[list[float]]:
+        response = await sf_client.embeddings.create(
+            model="BAAI/bge-m3",
             input=texts
         )
         return [embedding.embedding for embedding in response.data]
 
-    return Embedder(model="text-embedding-3-large", async_call=openai_embed_func)
+    return EmbeddingFunc(embedding_dim=1024, func=sf_embed_func)
 
+# 3. Reranker function using SiliconFlow's API
+async def get_siliconflow_reranker_func():
+    SILICONFLOW_API_KEY = os.environ.get("SILICONFLOW_API_KEY")
+    if not SILICONFLOW_API_KEY:
+        raise ValueError("SILICONFLOW_API_KEY environment variable is not set for reranking.")
 
-# 3. Reranker function using ModelScope's chat completion endpoint
-async def get_modelscope_reranker_func():
-    if not MODELSCOPE_API_KEY:
-        raise ValueError("MODELSCOPE_API_KEY environment variable is not set for reranking.")
-
-    modelscope_client = AsyncOpenAI(
-        api_key=MODELSCOPE_API_KEY,
-        base_url="https://api-inference.modelscope.cn/v1",
-        timeout=httpx.AsyncTimeout(3600.0),
+    sf_client = AsyncOpenAI(
+        api_key=SILICONFLOW_API_KEY,
+        base_url="https://api.siliconflow.cn/v1"
     )
 
-    async def rerank_func(query: str, documents: list[Document], top_n: int = None) -> list[Document]:
+    async def rerank_func(query: str, documents: list[dict], top_n: int = None) -> list[dict]:
         if not documents:
             return []
 
-        doc_texts = [doc.text for doc in documents]
-        numbered_documents = "\n".join([f"[{i}] {doc}" for i, doc in enumerate(doc_texts)])
+        doc_texts = [doc['text'] for doc in documents]
 
-        prompt = f"""You are an expert relevance ranker. Your task is to reorder a list of documents based on their relevance to a given query.
-
-Query: "{query}"
-
-Documents:
-{numbered_documents}
-
-Instructions:
-1. Read the query and all the documents carefully.
-2. Determine which documents are most relevant to the query.
-3. Return a JSON object containing a single key "ranking" which is a list of the original indices of the documents, sorted from most relevant to least relevant.
-4. Only include documents that are relevant. If a document is completely irrelevant, do not include its index in the list.
-5. Your output MUST be a valid JSON object and nothing else.
-
-Example output for a different query:
-{{
-  "ranking": [3, 1, 0]
-}}
-"""
         try:
-            response = await modelscope_client.chat.completions.create(
-                model="qwen-max-latest",
-                messages=[
-                    {"role": "system", "content": "You are an expert relevance ranker."},
-                    {"role": "user", "content": prompt}
-                ],
-                response_format={"type": "json_object"},
-                temperature=0.0
-            )
-            message_content = response.choices[0].message.content
-            if message_content is None:
-                raise ValueError("API returned an empty message.")
+            # SiliconFlow's rerank is not a standard OpenAI endpoint, so we call it with httpx
+            # However, the python SDK might support it. Let's assume it's a custom call for now.
+            # The provided documentation shows a /rerank endpoint.
+            # The openai-python library does not have a client.rerank method.
+            # We will use httpx like in the old jina function.
+            rerank_url = "https://api.siliconflow.cn/v1/rerank"
+            headers = {
+                "accept": "application/json",
+                "content-type": "application/json",
+                "authorization": f"Bearer {SILICONFLOW_API_KEY}"
+            }
+            payload = {
+                "model": "BAAI/bge-reranker-v2-m3",
+                "query": query,
+                "documents": doc_texts,
+                "top_n": top_n or len(doc_texts),
+                "return_documents": False
+            }
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                response = await client.post(rerank_url, headers=headers, json=payload)
+                response.raise_for_status()
+                results = response.json().get("results", [])
 
-            cleaned_json = json_repair.repair_json(message_content)
-            sorted_indices = json.loads(cleaned_json).get("ranking", [])
+                reranked_docs = []
+                for result in results:
+                    original_doc = documents[result['index']]
+                    # Add metadata if it doesn't exist
+                    if 'metadata' not in original_doc:
+                        original_doc['metadata'] = {}
+                    original_doc['metadata']['rerank_score'] = result['relevance_score']
+                    reranked_docs.append(original_doc)
+                
+                return reranked_docs
 
-            # Create a map of original index to document
-            doc_map = {i: doc for i, doc in enumerate(documents)}
-
-            # Build the reranked list
-            reranked_docs = [doc_map[i] for i in sorted_indices if i in doc_map]
-
-            # Add remaining documents that were not ranked to the end
-            ranked_indices_set = set(sorted_indices)
-            unranked_docs = [doc for i, doc in enumerate(documents) if i not in ranked_indices_set]
-
-            final_docs = reranked_docs + unranked_docs
-
-            return final_docs[:top_n] if top_n else final_docs
-
-        except Exception as e:
-            print(f"Error during reranking with ModelScope ChatCompletion: {e}")
+        except httpx.HTTPStatusError as e:
+            print(f"Error during reranking with SiliconFlow API: {e}")
+            print(f"Response body: {e.response.text}")
             return documents[:top_n] if top_n else documents
-
+        except Exception as e:
+            print(f"An unexpected error occurred during reranking with SiliconFlow API: {e}")
+            return documents[:top_n] if top_n else documents
+            
     return rerank_func
 
-
 async def initialize_rag():
-    """Initializes the LightRAG instance with the correct models."""
+    """Initializes the LightRAG instance with the correct models for development."""
 
     llm_func = await get_xai_llm_func()
     embedder = get_embedding_func()
-    reranker = await get_modelscope_reranker_func()
+    reranker = await get_siliconflow_reranker_func()
 
     rag = LightRAG(
         working_dir=WORKING_DIR,
         llm_model_func=llm_func,
-        embedder=embedder,
-        reranker=reranker
+        embedding_func=embedder,
+        rerank_model_func=reranker,
+        llm_model_max_async=16,
+        embedding_func_max_async=16,
+        max_parallel_insert=16
     )
     await rag.initialize_storages()
     await initialize_pipeline_status()
@@ -161,35 +155,63 @@ async def initialize_rag():
 
 # --- Data Processing ---
 async def process_data(rag: LightRAG):
-    """Finds, reads, and processes all .jsonl files."""
+    """Finds, reads, and processes all .jsonl files in batches."""
     jsonl_files = glob.glob(DATA_SOURCE_DIR)
     if not jsonl_files:
         print(f"No .jsonl files found in {DATA_SOURCE_DIR}")
         return
 
     print(f"Found {len(jsonl_files)} files to process.")
+    BATCH_SIZE = 100  # Process 100 documents at a time
 
     for file_path in jsonl_files:
         print(f"Processing file: {file_path}")
+        doc_batch = []
+        id_batch = []
+        path_batch = []
+        line_num = 0
+
         with open(file_path, 'r', encoding='utf-8') as f:
             for i, line in enumerate(f):
+                line_num = i + 1
                 try:
                     data = json.loads(line)
                     doc_id = data.get("doc_id")
                     text = data.get("text")
 
                     if not doc_id or not text:
-                        print(f"Skipping line {i+1} in {file_path} due to missing 'doc_id' or 'text'.")
+                        print(f"Skipping line {line_num} in {file_path} due to missing 'doc_id' or 'text'.")
                         continue
+                    
+                    # Replace {PlayerName} and its variants with "漂泊者"
+                    text = re.sub(r'\{PlayerName\}\{Male=.*?Female=.*?\}|\{PlayerName\}', '漂泊者', text)
+                    
+                    doc_batch.append(text)
+                    id_batch.append(doc_id)
+                    path_batch.append(file_path)
 
-                    document = Document(doc_id=doc_id, text=text)
-                    await rag.ainsert(document)
-                    print(f"  - Inserted doc_id: {doc_id}")
+                    if len(doc_batch) >= BATCH_SIZE:
+                        print(f"  - Processing batch of {len(doc_batch)} documents (up to line {line_num})...")
+                        await rag.ainsert(input=doc_batch, ids=id_batch, file_paths=path_batch)
+                        print(f"  - Batch inserted.")
+                        doc_batch, id_batch, path_batch = [], [], []
 
                 except json.JSONDecodeError:
-                    print(f"Skipping line {i+1} in {file_path} due to invalid JSON.")
+                    print(f"Skipping line {line_num} in {file_path} due to invalid JSON.")
                 except Exception as e:
-                    print(f"An error occurred while processing doc_id {doc_id}: {e}")
+                    print(f"An error occurred while processing batch around line {line_num}: {e}")
+                    # Clear batch to avoid reprocessing failed data
+                    doc_batch, id_batch, path_batch = [], [], []
+        
+        # Process the final batch if any documents are left
+        if doc_batch:
+            print(f"  - Processing final batch of {len(doc_batch)} documents (up to line {line_num})...")
+            try:
+                await rag.ainsert(input=doc_batch, ids=id_batch, file_paths=path_batch)
+                print(f"  - Final batch inserted.")
+            except Exception as e:
+                print(f"An error occurred while processing the final batch: {e}")
+
 
     print("Data processing complete.")
 
@@ -197,9 +219,9 @@ async def process_data(rag: LightRAG):
 async def main():
     rag_instance = None
     try:
-        print("Starting data preprocessing...")
-        if not all([XAI_API_KEY, MODELSCOPE_API_KEY, OPENAI_API_KEY]):
-            print("Error: One or more required API keys (XAI_API_KEY, MODELSCOPE_API_KEY, OPENAI_API_KEY) are not set.")
+        print("Starting DEV data preprocessing (using SiliconFlow Reranker)...")
+        if not all([XAI_API_KEY, os.environ.get("SILICONFLOW_API_KEY")]):
+            print("Error: One or more required API keys (XAI_API_KEY, SILICONFLOW_API_KEY) are not set.")
             exit(1)
 
         rag_instance = await initialize_rag()
