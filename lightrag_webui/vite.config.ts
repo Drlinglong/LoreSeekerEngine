@@ -1,6 +1,6 @@
 import { defineConfig } from 'vite'
 import path from 'path'
-import { webuiPrefix } from '@/lib/constants'
+import { webuiPrefix } from './src/lib/constants'
 import react from '@vitejs/plugin-react-swc'
 import tailwindcss from '@tailwindcss/vite'
 
@@ -12,7 +12,7 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src')
     }
   },
-  // base: import.meta.env.VITE_BASE_URL || '/webui/',
+  // base: process.env.VITE_BASE_URL || '/webui/',
   base: webuiPrefix,
   build: {
     outDir: path.resolve(__dirname, '../lightrag/api/webui'),
@@ -31,12 +31,12 @@ export default defineConfig({
     }
   },
   server: {
-    proxy: import.meta.env.VITE_API_PROXY === 'true' && import.meta.env.VITE_API_ENDPOINTS ?
+    proxy: process.env.VITE_API_PROXY === 'true' && process.env.VITE_API_ENDPOINTS ?
       Object.fromEntries(
-        import.meta.env.VITE_API_ENDPOINTS.split(',').map(endpoint => [
+        process.env.VITE_API_ENDPOINTS.split(',').map(endpoint => [
           endpoint,
           {
-            target: import.meta.env.VITE_BACKEND_URL || 'http://localhost:9621',
+            target: process.env.VITE_BACKEND_URL || 'http://localhost:9621',
             changeOrigin: true,
             rewrite: endpoint === '/api' ?
               (path) => path.replace(/^\/api/, '') :

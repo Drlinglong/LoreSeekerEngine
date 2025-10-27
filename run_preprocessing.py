@@ -13,10 +13,8 @@ from lightrag.kg.shared_storage import initialize_pipeline_status
 import json_repair
 
 # --- Configuration ---
-# API keys are expected to be set as environment variables for development
-XAI_API_KEY = os.environ.get("XAI_API_KEY")
-JINA_API_KEY = os.environ.get("JINA_API_KEY") # For developer's reranker
-OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY") # For embeddings
+# API keys are expected to be set as environment variables
+SILICONFLOW_API_KEY = os.environ.get("SILICONFLOW_API_KEY") # Used for reranking, embeddings, and now KG extraction
 
 # Directory where the precomputed data will be stored
 WORKING_DIR = "./game_data_index"
@@ -25,37 +23,10 @@ DATA_SOURCE_DIR = "data/Wuthering Waves/*.jsonl"
 
 # --- Model & RAG Initialization ---
 
-# 1. LLM function for xAI Grok
-async def get_xai_llm_func():
-    if not XAI_API_KEY:
-        raise ValueError("XAI_API_KEY environment variable is not set.")
 
-    xai_client = AsyncOpenAI(
-        api_key=XAI_API_KEY,
-        base_url="https://api.x.ai/v1",
-        timeout=httpx.Timeout(3600.0),
-    )
-
-    async def llm_model_func(prompt: str, system_prompt: str = None, history_messages: list = None, hashing_kv=None, **kwargs) -> str:
-        messages = []
-        if system_prompt:
-            messages.append({"role": "system", "content": system_prompt})
-        if history_messages:
-            messages.extend(history_messages)
-        messages.append({"role": "user", "content": prompt})
-
-        completion = await xai_client.chat.completions.create(
-            model="grok-4-fast",
-            messages=messages,
-            **kwargs,
-        )
-        return completion.choices[0].message.content
-
-    return llm_model_func
 
 # 2. Embedding function using SiliconFlow API
 def get_embedding_func():
-    SILICONFLOW_API_KEY = os.environ.get("SILICONFLOW_API_KEY")
     if not SILICONFLOW_API_KEY:
         raise ValueError("SILICONFLOW_API_KEY environment variable is not set for embeddings.")
 
@@ -75,27 +46,16 @@ def get_embedding_func():
 
 # 3. Reranker function using SiliconFlow's API
 async def get_siliconflow_reranker_func():
-    SILICONFLOW_API_KEY = os.environ.get("SILICONFLOW_API_KEY")
     if not SILICONFLOW_API_KEY:
         raise ValueError("SILICONFLOW_API_KEY environment variable is not set for reranking.")
-
-    sf_client = AsyncOpenAI(
-        api_key=SILICONFLOW_API_KEY,
-        base_url="https://api.siliconflow.cn/v1"
-    )
 
     async def rerank_func(query: str, documents: list[dict], top_n: int = None) -> list[dict]:
         if not documents:
             return []
 
-        doc_texts = [doc['text'] for doc in documents]
+        doc_texts = [doc.get('text', '') for doc in documents]
 
         try:
-            # SiliconFlow's rerank is not a standard OpenAI endpoint, so we call it with httpx
-            # However, the python SDK might support it. Let's assume it's a custom call for now.
-            # The provided documentation shows a /rerank endpoint.
-            # The openai-python library does not have a client.rerank method.
-            # We will use httpx like in the old jina function.
             rerank_url = "https://api.siliconflow.cn/v1/rerank"
             headers = {
                 "accept": "application/json",
@@ -117,7 +77,6 @@ async def get_siliconflow_reranker_func():
                 reranked_docs = []
                 for result in results:
                     original_doc = documents[result['index']]
-                    # Add metadata if it doesn't exist
                     if 'metadata' not in original_doc:
                         original_doc['metadata'] = {}
                     original_doc['metadata']['rerank_score'] = result['relevance_score']
@@ -135,21 +94,26 @@ async def get_siliconflow_reranker_func():
             
     return rerank_func
 
-async def initialize_rag():
-    """Initializes the LightRAG instance with the correct models for development."""
 
-    llm_func = await get_xai_llm_func()
+async def no_op_llm_func(*args, **kwargs):
+    """A dummy LLM function that does nothing and returns an empty string."""
+    return ""
+
+async def initialize_rag():
+    """Initializes the LightRAG instance for a vector-only setup."""
+
     embedder = get_embedding_func()
     reranker = await get_siliconflow_reranker_func()
 
     rag = LightRAG(
         working_dir=WORKING_DIR,
-        llm_model_func=llm_func,
+        llm_model_func=no_op_llm_func,  # Use the no-op function to disable KG
         embedding_func=embedder,
         rerank_model_func=reranker,
-        llm_model_max_async=16,
-        embedding_func_max_async=16,
-        max_parallel_insert=16
+        llm_model_max_async=128,
+        embedding_func_max_async=128,
+        max_parallel_insert=128,
+        max_graph_nodes=16  # This parameter is now effectively ignored
     )
     await rag.initialize_storages()
     await initialize_pipeline_status()
@@ -199,8 +163,8 @@ async def main():
     rag_instance = None
     try:
         print("Starting DEV data preprocessing (using SiliconFlow Reranker)...")
-        if not all([XAI_API_KEY, os.environ.get("SILICONFLOW_API_KEY")]):
-            print("Error: One or more required API keys (XAI_API_KEY, SILICONFLOW_API_KEY) are not set.")
+        if not SILICONFLOW_API_KEY: # This is the change
+            print("Error: SILICONFLOW_API_KEY environment variable is not set.")
             exit(1)
 
         rag_instance = await initialize_rag()

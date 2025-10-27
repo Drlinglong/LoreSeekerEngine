@@ -42,7 +42,7 @@ export default function QuerySettings() {
     mode: 'mix' as QueryMode,
     response_type: 'Multiple Paragraphs',
     top_k: 40,
-    chunk_top_k: 20,
+    chunk_top_k: 50,
     max_entity_tokens: 6000,
     max_relation_tokens: 8000,
     max_total_tokens: 30000
@@ -259,7 +259,7 @@ export default function QuerySettings() {
                   onBlur={(e) => {
                     const value = e.target.value
                     if (value === '' || isNaN(parseInt(value))) {
-                      handleChange('chunk_top_k', 20)
+                      handleChange('chunk_top_k', 50)
                     }
                   }}
                   min={1}

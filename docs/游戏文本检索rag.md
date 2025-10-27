@@ -15,7 +15,7 @@
     * **图谱构建 (关键步骤):**
         * 使用 `LightRAG` 的自动实体与关系抽取功能。
         * **核心魔改:** **修改 `lightrag/prompt.py` 文件中的抽取 Prompt**，使其高度针对游戏领域（明确指定要抽取的实体类型如 `人物`, `地点`, `技能`, `道具`, `事件` 等，以及它们之间的关系）。
-        * **LLM 选择:** 调用 **`grok-4-fast` API** 完成此步骤。优点是速度快、质量可能更高、避免本地 GPU 长时间被占用，成本可控（约 2 澳元/15MB，由朋友报销）。
+        * **LLM 选择:** 调用 **`grok-4-fast` API** 完成此步骤。
     * **向量化 (Embedding):** 选择一个 Embedding 模型（如 `text-embedding-3-large` API 或 `bge-m3`），对文本块、实体、关系进行向量化。**注意：** 此模型需与后续分发包中的配置保持一致。
     * **重排序 (Reranking):** **启用** `LightRAG` 的 Reranker 功能，在初始化时传入 Reranker 函数（如 `jina_rerank` API）。
     * **数据存储:** 使用 `LightRAG` 的默认**本地文件存储** (`JsonKVStorage`, `NanoVectorDBStorage`, `NetworkXStorage`, `JsonDocStatusStorage`)。所有计算结果（图谱、向量、文本块等）保存在指定的 `working_dir` 目录（例如 `./game_data_index`）。
