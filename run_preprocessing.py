@@ -4,9 +4,11 @@ import glob
 import asyncio
 import httpx
 import re
+import itertools
 from openai import AsyncOpenAI
 from lightrag.lightrag import LightRAG
 from lightrag.utils import EmbeddingFunc
+from preprocessor import get_processed_docs
 from lightrag.kg.shared_storage import initialize_pipeline_status
 import json_repair
 
@@ -155,66 +157,43 @@ async def initialize_rag():
 
 # --- Data Processing ---
 async def process_data(rag: LightRAG):
-    """Finds, reads, and processes all .jsonl files in batches."""
+    """
+    Finds all .jsonl files, processes them using the external preprocessor,
+    and inserts the resulting logical documents into LightRAG in batches.
+    """
     jsonl_files = glob.glob(DATA_SOURCE_DIR)
     if not jsonl_files:
         print(f"No .jsonl files found in {DATA_SOURCE_DIR}")
         return
 
-    print(f"Found {len(jsonl_files)} files to process.")
-    BATCH_SIZE = 100  # Process 100 documents at a time
+    print(f"Found {len(jsonl_files)} files to process with dynamic strategies.")
+    BATCH_SIZE = 50  # Process 50 LOGICAL documents at a time
+
+    doc_batch = []
+    id_batch = []
+    path_batch = []
 
     for file_path in jsonl_files:
-        print(f"Processing file: {file_path}")
-        doc_batch = []
-        id_batch = []
-        path_batch = []
-        line_num = 0
+        print(f"Processing file with dispatcher: {file_path}")
+        for doc in get_processed_docs(file_path):
+            doc_batch.append(doc['text'])
+            id_batch.append(doc['doc_id'])
+            # Use the source file from the doc's metadata
+            path_batch.append(doc['metadata']['source_file'])
 
-        with open(file_path, 'r', encoding='utf-8') as f:
-            for i, line in enumerate(f):
-                line_num = i + 1
-                try:
-                    data = json.loads(line)
-                    doc_id = data.get("doc_id")
-                    text = data.get("text")
-
-                    if not doc_id or not text:
-                        print(f"Skipping line {line_num} in {file_path} due to missing 'doc_id' or 'text'.")
-                        continue
-                    
-                    # Replace {PlayerName} and its variants with "漂泊者"
-                    text = re.sub(r'\{PlayerName\}\{Male=.*?Female=.*?\}|\{PlayerName\}', '漂泊者', text)
-                    
-                    doc_batch.append(text)
-                    id_batch.append(doc_id)
-                    path_batch.append(file_path)
-
-                    if len(doc_batch) >= BATCH_SIZE:
-                        print(f"  - Processing batch of {len(doc_batch)} documents (up to line {line_num})...")
-                        await rag.ainsert(input=doc_batch, ids=id_batch, file_paths=path_batch)
-                        print(f"  - Batch inserted.")
-                        doc_batch, id_batch, path_batch = [], [], []
-
-                except json.JSONDecodeError:
-                    print(f"Skipping line {line_num} in {file_path} due to invalid JSON.")
-                except Exception as e:
-                    print(f"An error occurred while processing batch around line {line_num}: {e}")
-                    # Clear batch to avoid reprocessing failed data
-                    doc_batch, id_batch, path_batch = [], [], []
-        
-        # Process the final batch if any documents are left
-        if doc_batch:
-            print(f"  - Processing final batch of {len(doc_batch)} documents (up to line {line_num})...")
-            try:
+            if len(doc_batch) >= BATCH_SIZE:
+                print(f"  - Processing batch of {len(doc_batch)} logical documents...")
                 await rag.ainsert(input=doc_batch, ids=id_batch, file_paths=path_batch)
-                print(f"  - Final batch inserted.")
-            except Exception as e:
-                print(f"An error occurred while processing the final batch: {e}")
+                print(f"  - Batch inserted.")
+                doc_batch, id_batch, path_batch = [], [], []
 
+    # Process the final batch
+    if doc_batch:
+        print(f"  - Processing final batch of {len(doc_batch)} logical documents...")
+        await rag.ainsert(input=doc_batch, ids=id_batch, file_paths=path_batch)
+        print(f"  - Final batch inserted.")
 
     print("Data processing complete.")
-
 # --- Main Execution ---
 async def main():
     rag_instance = None
