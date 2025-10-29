@@ -11,7 +11,7 @@ echo.
 REM --- Step 1: Activate Portable Environment ---
 echo [INFO] Setting up portable environment...
 set "PATH=%CD%\python-embed;%CD%\python-embed\Scripts;%PATH%"
-set "PYTHONPATH=%CD%\packages;%CD%\python-embed;%CD%\LoreSeekerEngine"
+set "PYTHONPATH=%CD%\packages;%CD%\python-embed"
 echo [INFO] Portable Python environment activated.
 echo.
 
@@ -21,9 +21,10 @@ if not exist ".env" (
     echo [ERROR] .env file not found. Please run setup.bat first.
     goto :final_error
 )
-for /f "usebackq delims=" %%a in (".env") do (
-    set "%%a"
-)
+rem This section is now disabled to let Python's dotenv handle environment variables directly.
+rem for /f "usebackq delims=" %%a in (".env") do (
+rem     set "%%a"
+rem )
 echo [INFO] Environment variables loaded.
 echo.
 

@@ -234,7 +234,11 @@ async def jina_rerank(
         List of dictionary of ["index": int, "relevance_score": float]
     """
     if api_key is None:
-        api_key = os.getenv("JINA_API_KEY") or os.getenv("RERANK_BINDING_API_KEY")
+        api_key = (
+            os.getenv("JINA_API_KEY")
+            or os.getenv("RERANK_BINDING_API_KEY")
+            or os.getenv("SILICONFLOW_API_KEY")
+        )
 
     return await generic_rerank_api(
         query=query,

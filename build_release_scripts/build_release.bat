@@ -14,11 +14,11 @@ echo.
 
 REM --- Step 1: Initialization ---
 set "SCRIPT_DIR=%~dp0"
-set "PROJECT_ROOT=%SCRIPT_DIR%..\..\"
+set "PROJECT_ROOT=%SCRIPT_DIR%.."
 
 set "PROJECT_NAME=LoreSeekerEngine"
 set "VERSION=1.0.1"
-set "RELEASE_DIR=%PROJECT_ROOT%\%PROJECT_NAME%_%VERSION%"
+set "RELEASE_DIR=%PROJECT_ROOT%\..\%PROJECT_NAME%_%VERSION%"
 set "RELEASE_DIR_NAME=%PROJECT_NAME%_%VERSION%"
 
 echo [INFO] Verifying execution environment...
@@ -66,7 +66,7 @@ REM --- Step 5: Copy All Necessary Source Code & Data ---
 echo [INFO] Copying all application source code into subfolder...
 
 REM Use robocopy for robust, recursive copying. Exclude temporary/unnecessary dirs and data index.
-robocopy "%PROJECT_ROOT%" "%RELEASE_DIR%\%PROJECT_NAME%" /e /xd __pycache__ .git .vscode .idea .pytest_cache build_release_scripts game_data_index
+robocopy "%PROJECT_ROOT%" "%RELEASE_DIR%\%PROJECT_NAME%" /e /xd __pycache__ /xd .git /xd .vscode /xd .idea /xd .pytest_cache /xd build_release_scripts /xd game_data_index /xd node_modules
 if %errorlevel% gtr 7 (
     echo [ERROR] Robocopy failed to copy source code. Aborting.
     pause

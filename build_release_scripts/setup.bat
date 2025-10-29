@@ -1,4 +1,5 @@
 @echo off
+setlocal enabledelayedexpansion
 pushd "%~dp0"
 chcp 65001 >nul
 title LoreSeekerEngine - Portable Setup
@@ -27,6 +28,7 @@ if exist "%PTH_FILE%" (
     (
         echo python312.zip
         echo .
+        echo ..\LoreSeekerEngine
         echo import site
     ) > "%PTH_FILE%"
     set "PTH_FIX_APPLIED=1"
@@ -80,6 +82,7 @@ if exist ".env" (
     (
         echo # Environment variables for LoreSeekerEngine
         echo SILICONFLOW_API_KEY=!SILICONFLOW_API_KEY!
+        echo RERANK_BINDING_API_KEY=!SILICONFLOW_API_KEY!
         echo LLM_BINDING=openai
         echo LLM_BINDING_HOST=https://api.siliconflow.cn/v1
         echo LLM_MODEL=Qwen/Qwen3-VL-30B-A3B-Instruct
