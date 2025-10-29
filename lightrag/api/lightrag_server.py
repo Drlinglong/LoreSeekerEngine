@@ -21,6 +21,9 @@ from ascii_colors import ASCIIColors
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from dotenv import load_dotenv
+
+# Load environment variables from .env file at the project root
+load_dotenv()
 from lightrag.api.utils_api import (
     get_combined_auth_dependency,
     display_splash_screen,
@@ -456,7 +459,7 @@ def create_app(args):
                 system_prompt=system_prompt,
                 history_messages=history_messages,
                 base_url=args.llm_binding_host,
-                api_key=args.llm_binding_api_key,
+                api_key=os.getenv("SILICONFLOW_API_KEY"),
                 **kwargs,
             )
 
@@ -646,7 +649,7 @@ def create_app(args):
             binding=args.embedding_binding,
             model=args.embedding_model,
             host=args.embedding_binding_host,
-            api_key=args.embedding_binding_api_key,
+            api_key=os.getenv("SILICONFLOW_API_KEY"),
             dimensions=args.embedding_dim,
             args=args,  # Pass args object for fallback option generation
         ),

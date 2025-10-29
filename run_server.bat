@@ -11,11 +11,9 @@ python -m lightrag.api.lightrag_server ^
     --llm-binding openai ^
     --llm-binding-host "https://api.siliconflow.cn/v1" ^
     --llm-model "Qwen/Qwen3-VL-235B-A22B-Instruct" ^
-    --llm-binding-api-key "%SILICONFLOW_API_KEY%" ^
     --embedding-binding openai ^
     --embedding-binding-host "https://api.siliconflow.cn/v1" ^
     --embedding-model "BAAI/bge-m3" ^
-    --embedding-binding-api-key "%SILICONFLOW_API_KEY%" ^
     --chunk-top-k 50
 
 pause
