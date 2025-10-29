@@ -1,24 +1,18 @@
 @echo off
 setlocal enabledelayedexpansion
 
-
-set CONDA_ROOT=K:\MiniConda
-set ENV_NAME=local_factory
-
 REM =================================================================
-REM Project Remis - Portable Release Build Script (Final Architect's Edition)
-REM Version: 1.1.9
-REM Assumption: This script is run from an already activated Conda/Python environment.
+REM LoreSeekerEngine - Portable Release Build Script
+REM Version: 1.0.0
+REM Assumption: This script is run from a Python environment where 'pip' is available.
 REM =================================================================
 
 echo [INFO] =================================================================
-echo [INFO] Project Remis - Portable Release Build Script
+echo [INFO] LoreSeekerEngine - Portable Release Build Script
 echo [INFO] =================================================================
 echo.
 
 REM --- Step 1: Initialization ---
-REM ** CRITICAL FIX: Robustly determine the project root **
-REM The project root is two levels up from this script's directory.
 set "SCRIPT_DIR=%~dp0"
 set "PROJECT_ROOT=%SCRIPT_DIR%..\..\"
 
@@ -33,12 +27,14 @@ echo [INFO] Release will be built in: %RELEASE_DIR%
 echo.
 
 REM --- Step 2: Cleanup ---
-echo [INFO] Cleaning up previous build directory...
+echo [INFO] Cleaning up previous build...
 if exist "%RELEASE_DIR%" (
     rd /s /q "%RELEASE_DIR%"
     echo [INFO] Old release directory removed.
-) else (
-    echo [INFO] No old directory to clean.
+)
+if exist "%PROJECT_ROOT%\%RELEASE_DIR_NAME%.zip" (
+    del "%PROJECT_ROOT%\%RELEASE_DIR_NAME%.zip"
+    echo [INFO] Old release zip removed.
 )
 echo.
 
@@ -47,6 +43,7 @@ echo [INFO] Creating new release directory structure...
 mkdir "%RELEASE_DIR%"
 mkdir "%RELEASE_DIR%\packages"
 mkdir "%RELEASE_DIR%\python-embed"
+mkdir "%RELEASE_DIR%\%PROJECT_NAME%"
 if %errorlevel% neq 0 (
     echo [ERROR] Failed to create directory structure. Aborting.
     pause
@@ -56,7 +53,7 @@ echo [INFO] Directory structure created.
 echo.
 
 REM --- Step 4: Automated Python Extraction ---
-echo [INFO] Extracting Python 3.10.11 embeddable package...
+echo [INFO] Extracting Python embeddable package...
 tar -xf "%SCRIPT_DIR%python-3.12.10-embed-amd64.zip" -C "%RELEASE_DIR%\python-embed"
 if not exist "%RELEASE_DIR%\python-embed\python.exe" (
     echo [ERROR] python.exe not found after extraction! Check if tar command is available and the zip file is correct. Aborting.
@@ -67,21 +64,29 @@ echo [INFO] Embedded Python extracted successfully.
 echo.
 
 REM --- Step 5: Copy All Necessary Source Code & Data ---
-echo [INFO] Copying all application source code and data...
+echo [INFO] Copying all application source code into subfolder...
 
-REM Use robocopy for robust, recursive copying. Exclude temporary/unnecessary dirs.
-set "XCOPY_EXCLUDES=/xd __pycache__ .git .vscode .idea .pytest_cache build_release_scripts"
+REM Use robocopy for robust, recursive copying. Exclude temporary/unnecessary dirs and data index.
+robocopy "%PROJECT_ROOT%" "%RELEASE_DIR%\%PROJECT_NAME%" /e /xd __pycache__ .git .vscode .idea .pytest_cache build_release_scripts game_data_index
+if %errorlevel% gtr 7 (
+    echo [ERROR] Robocopy failed to copy source code. Aborting.
+    pause
+    exit /b 1
+)
 
-robocopy "%PROJECT_ROOT%" "%RELEASE_DIR%" /e /xd __pycache__ .git .vscode .idea .pytest_cache build_release_scripts
+echo [INFO] Copying game data index to release root...
+robocopy "%PROJECT_ROOT%\game_data_index" "%RELEASE_DIR%\game_data_index" /e
+if %errorlevel% gtr 7 (
+    echo [ERROR] Robocopy failed to copy game data index. Aborting.
+    pause
+    exit /b 1
+)
 
 REM Ensure the final requirements file is named correctly for the setup script.
 copy "%PROJECT_ROOT%\requirements-offline.txt" "%RELEASE_DIR%\requirements.txt" /y
 
 echo [INFO] Source code and data copied.
 echo.
-
-REM --- Step 5.5: Create Required Empty Directories ---
-REM Not needed for this project
 
 REM --- Step 5.6: Copy Pre-written Setup & Run Scripts ---
 echo [INFO] Copying portable setup.bat and run.bat...
@@ -96,17 +101,6 @@ if %errorlevel% neq 0 (
 echo [INFO] Portable scripts copied successfully.
 echo.
 
-REM --- Step 5.7: Activate Conda Environment ---
-echo [INFO] Activating Conda environment: %ENV_NAME%
-call "%CONDA_ROOT%\condabin\conda.bat" activate %ENV_NAME%
-if %errorlevel% neq 0 (
-    echo [ERROR] Failed to activate Conda environment. Please check CONDA_ROOT and ENV_NAME.
-    pause
-    exit /b 1
-)
-echo [INFO] Conda environment activated.
-echo.
-
 REM --- Step 6: Vendor Dependencies ---
 echo [INFO] Downloading all dependencies to 'packages' folder...
 pushd "%RELEASE_DIR%"
@@ -119,19 +113,9 @@ if %PIP_DOWNLOAD_RESULT% neq 0 (
     exit /b 1
 )
 echo [INFO] All dependencies downloaded successfully.
-
-REM --- Step 7: Copy Pre-written run.bat ---
-echo [INFO] Copying portable run.bat...
-copy "%SCRIPT_DIR%run.bat" "%RELEASE_DIR%\run.bat" /y
-if %errorlevel% neq 0 (
-    echo [ERROR] Failed to copy run.bat
-    pause
-    exit /b 1
-)
-echo [INFO] Portable run.bat copied successfully.
 echo.
 
-REM --- Step 8: Final Packaging ---
+REM --- Step 7: Final Packaging ---
 echo [INFO] Attempting to create ZIP archive...
 set "SEVENZIP_PATH="
 if exist "%ProgramFiles%\7-Zip\7z.exe" set "SEVENZIP_PATH=%ProgramFiles%\7-Zip\7z.exe"
@@ -144,11 +128,12 @@ if not "%SEVENZIP_PATH%"=="" (
 ) else (
     echo [WARNING] 7-Zip not found. Skipping automatic zipping.
     echo [ACTION REQUIRED] Please manually zip the folder: %RELEASE_DIR%
-)
+}
 echo.
 
 REM --- Build Complete ---
 echo =================================================================
 echo [SUCCESS] Build process completed!
+echo The release package is in: %RELEASE_DIR%
 echo =================================================================
 pause

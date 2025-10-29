@@ -1,56 +1,46 @@
 @echo off
 pushd "%~dp0"
 setlocal enabledelayedexpansion
-title Project Remis
+title LoreSeekerEngine
 
 echo [INFO] =================================================================
-echo [INFO] Project Remis - Portable Toolkit Startup
+echo [INFO] LoreSeekerEngine - Portable Toolkit Startup
 echo [INFO] =================================================================
+echo.
+
+REM --- Step 1: Activate Portable Environment ---
 echo [INFO] Setting up portable environment...
+set "PATH=%CD%\python-embed;%CD%\python-embed\Scripts;%PATH%"
+set "PYTHONPATH=%CD%\packages;%CD%\python-embed;%CD%\LoreSeekerEngine"
+echo [INFO] Portable Python environment activated.
 echo.
 
-REM --- Portable Toolkit Environment Setup ---
-REM Temporarily "hijack" the current command-line session environment
-set "ORIGINAL_PATH=%PATH%"
-set "ORIGINAL_PYTHONPATH=%PYTHONPATH%"
-set "ORIGINAL_PYTHONHOME=%PYTHONHOME%"
-
-REM Set portable Python as priority
-set "PATH=%CD%\python-embed;%PATH%"
-set "PYTHONPATH=%CD%\packages;%CD%\python-embed"
-REM PYTHONHOME is not needed and can cause path issues in embedded environments.
-
-echo [INFO] Portable Python environment activated
-echo [INFO] Python path: %CD%\python-embed
-echo [INFO] Packages path: %CD%\packages
+REM --- Step 2: Load Environment Variables from .env file ---
+echo [INFO] Loading environment variables from .env file...
+if not exist ".env" (
+    echo [ERROR] .env file not found. Please run setup.bat first.
+    goto :final_error
+)
+for /f "usebackq delims=" %%a in (".env") do (
+    set "%%a"
+)
+echo [INFO] Environment variables loaded.
 echo.
 
-REM --- Change to portable package directory ---
-cd /d "%CD%"
+REM --- Step 3: Verify API Key ---
+if not defined SILICONFLOW_API_KEY (
+    echo [ERROR] SILICONFLOW_API_KEY is not set in the .env file.
+    goto :final_error
+)
 
-REM --- Skip pip installation for embedded Python ---
-echo [INFO] Using pre-installed packages (embedded Python mode)
-echo [INFO] Dependencies are already included in the portable package
-echo.
-
-REM --- Step 3: Launch the server ---
-echo [INFO] Starting the LoreSeeker Engine server...
+REM --- Step 4: Launch the server ---
+echo [INFO] Starting the LoreSeekerEngine server...
 echo [INFO] This window will show server logs. Do not close it.
 
-python -m lightrag.api.lightrag_server ^
-    --working-dir ./game_data_index ^
-    --llm-binding openai ^
-    --llm-binding-host "https://api.siliconflow.cn/v1" ^
-    --llm-model "Qwen/Qwen3-VL-235B-A22B-Instruct" ^
-    --embedding-binding openai ^
-    --embedding-binding-host "https://api.siliconflow.cn/v1" ^
-    --embedding-model "BAAI/bge-m3"
+python -m lightrag.api.lightrag_server --working-dir ./game_data_index
 
-REM --- Restore original environment ---
-set "PATH=!ORIGINAL_PATH!"
-set "PYTHONPATH=!ORIGINAL_PYTHONPATH!"
-set "PYTHONHOME=!ORIGINAL_PYTHONHOME!"
-
-echo [INFO] Project Remis has closed. Environment restored.
-pause >nul
+:final_error
+echo.
+echo [INFO] Server stopped or failed to start.
 popd
+pause
