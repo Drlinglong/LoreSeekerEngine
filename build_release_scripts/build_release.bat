@@ -3,7 +3,7 @@ setlocal enabledelayedexpansion
 
 REM =================================================================
 REM LoreSeekerEngine - Portable Release Build Script
-REM Version: 1.0.0
+REM Version: 1.0.1
 REM Assumption: This script is run from a Python environment where 'pip' is available.
 REM =================================================================
 
@@ -17,7 +17,7 @@ set "SCRIPT_DIR=%~dp0"
 set "PROJECT_ROOT=%SCRIPT_DIR%..\..\"
 
 set "PROJECT_NAME=LoreSeekerEngine"
-set "VERSION=1.0.0"
+set "VERSION=1.0.1"
 set "RELEASE_DIR=%PROJECT_ROOT%\%PROJECT_NAME%_%VERSION%"
 set "RELEASE_DIR_NAME=%PROJECT_NAME%_%VERSION%"
 
@@ -41,7 +41,6 @@ echo.
 REM --- Step 3: Scaffolding ---
 echo [INFO] Creating new release directory structure...
 mkdir "%RELEASE_DIR%"
-mkdir "%RELEASE_DIR%\packages"
 mkdir "%RELEASE_DIR%\python-embed"
 mkdir "%RELEASE_DIR%\%PROJECT_NAME%"
 if %errorlevel% neq 0 (
@@ -88,7 +87,7 @@ copy "%PROJECT_ROOT%\requirements-offline.txt" "%RELEASE_DIR%\requirements.txt" 
 echo [INFO] Source code and data copied.
 echo.
 
-REM --- Step 5.6: Copy Pre-written Setup & Run Scripts ---
+REM --- Step 6: Copy Pre-written Setup & Run Scripts ---
 echo [INFO] Copying portable setup.bat and run.bat...
 copy "%SCRIPT_DIR%setup.bat" "%RELEASE_DIR%\setup.bat" /y
 copy "%SCRIPT_DIR%run.bat" "%RELEASE_DIR%\run.bat" /y
@@ -99,20 +98,6 @@ if %errorlevel% neq 0 (
     exit /b 1
 )
 echo [INFO] Portable scripts copied successfully.
-echo.
-
-REM --- Step 6: Vendor Dependencies ---
-echo [INFO] Downloading all dependencies to 'packages' folder...
-pushd "%RELEASE_DIR%"
-python -m pip download -v -r "%RELEASE_DIR%\requirements.txt" -d "packages" > "pip_log.txt" 2>&1
-set "PIP_DOWNLOAD_RESULT=%errorlevel%"
-popd
-if %PIP_DOWNLOAD_RESULT% neq 0 (
-    echo [ERROR] 'pip download' failed. Please check 'pip_log.txt' in the release directory for details. Aborting.
-    pause
-    exit /b 1
-)
-echo [INFO] All dependencies downloaded successfully.
 echo.
 
 REM --- Step 7: Final Packaging ---

@@ -57,13 +57,14 @@ popd
 echo [INFO] pip is available.
 echo.
 
-REM --- Step 4: Install dependencies from local packages ---
-echo [INFO] Installing dependencies from local 'packages' directory...
-python -m pip install --no-index --find-links=./packages -r requirements.txt
+REM --- Step 4: Install dependencies from the internet using a domestic mirror ---
+echo [INFO] Installing dependencies from requirements.txt. This may take a while...
+echo [INFO] Using Tsinghua University mirror for faster downloads in mainland China.
+python -m pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
 if not errorlevel 1 (
     echo [SUCCESS] All dependencies installed successfully.
 ) else (
-    echo [ERROR] Failed to install dependencies. Please check the 'packages' folder and requirements.txt.
+    echo [ERROR] Failed to install dependencies. Please check your internet connection and try again.
     goto :final_error
 )
 echo.
