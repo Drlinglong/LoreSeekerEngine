@@ -1,0 +1,82 @@
+{
+  "global:keywords:f9909c3d312d4749617ac0313c08d5e6": {
+    "return": "{\"high_level_keywords\": [\"\\u6f6e\\u6c50\\u4efb\\u52a1\", \"\\u4e3b\\u7ebf\\u7b2c\\u4e8c\\u7ae0\", \"\\u652f\\u7ebf\\u4efb\\u52a1\", \"\\u5267\\u60c5\\u7ec6\\u8282\", \"\\u53d9\\u4e8b\\u5206\\u6790\"], \"low_level_keywords\": [\"\\u6d3b\\u4eba\\u796d\\u7940\", \"\\u6316\\u9aa8\\u53d6\\u8840\", \"\\u5144\\u59b9\\u5206\\u79bb\", \"\\u6f6e\\u6c50\\u4efb\\u52a1\\u4e3b\\u7ebf\", \"\\u652f\\u7ebf\\u4efb\\u52a1\"]}",
+    "cache_type": "keywords",
+    "chunk_id": null,
+    "original_prompt": "谈谈“潮汐任务”主线第二章、部分支线的“活人祭祀”“挖骨取血”“兄妹分离”等剧情的细节。",
+    "queryparam": {
+      "mode": "global",
+      "response_type": "Multiple Paragraphs",
+      "top_k": 40,
+      "chunk_top_k": 20,
+      "max_entity_tokens": 6000,
+      "max_relation_tokens": 8000,
+      "max_total_tokens": 30000,
+      "user_prompt": "",
+      "enable_rerank": true
+    },
+    "create_time": 1761552215,
+    "update_time": 1761552215,
+    "_id": "global:keywords:f9909c3d312d4749617ac0313c08d5e6"
+  },
+  "global:keywords:64fb4c7bc76535fbdc4a4d660317f6d7": {
+    "return": "{\"high_level_keywords\": [\"\\u6f6e\\u6c50\\u4efb\\u52a1\", \"\\u4e3b\\u7ebf\\u5267\\u60c5\", \"\\u6545\\u4e8b\\u7ec6\\u8282\"], \"low_level_keywords\": [\"\\u7b2c\\u4e8c\\u7ae0\", \"\\u6f6e\\u6c50\\u4efb\\u52a1\\u4e3b\\u7ebf\", \"\\u5267\\u60c5\\u53d1\\u5c55\", \"\\u4efb\\u52a1\\u5185\\u5bb9\", \"\\u89d2\\u8272\\u4e92\\u52a8\"]}",
+    "cache_type": "keywords",
+    "chunk_id": null,
+    "original_prompt": "谈谈“潮汐任务”主线第二章的细节",
+    "queryparam": {
+      "mode": "global",
+      "response_type": "Multiple Paragraphs",
+      "top_k": 40,
+      "chunk_top_k": 20,
+      "max_entity_tokens": 6000,
+      "max_relation_tokens": 8000,
+      "max_total_tokens": 30000,
+      "user_prompt": "",
+      "enable_rerank": true
+    },
+    "create_time": 1761552248,
+    "update_time": 1761552248,
+    "_id": "global:keywords:64fb4c7bc76535fbdc4a4d660317f6d7"
+  },
+  "global:keywords:17c50776bf9ad0bf7c4f177b7d4d0a24": {
+    "return": "{\"high_level_keywords\": [\"\\u9650\\u65f6\\u4efb\\u52a1\", \"\\u5267\\u60c5\\u8bbe\\u5b9a\", \"\\u6e38\\u620f\\u5185\\u5bb9\"], \"low_level_keywords\": [\"\\u5fcc\\u708e\\u9650\\u5b9a\", \"\\u4efb\\u52a1\\u5267\\u60c5\"]}",
+    "cache_type": "keywords",
+    "chunk_id": null,
+    "original_prompt": "忌炎限定任务剧情设定？",
+    "queryparam": {
+      "mode": "global",
+      "response_type": "Multiple Paragraphs",
+      "top_k": 40,
+      "chunk_top_k": 20,
+      "max_entity_tokens": 6000,
+      "max_relation_tokens": 8000,
+      "max_total_tokens": 30000,
+      "user_prompt": "",
+      "enable_rerank": true
+    },
+    "create_time": 1761552283,
+    "update_time": 1761552283,
+    "_id": "global:keywords:17c50776bf9ad0bf7c4f177b7d4d0a24"
+  },
+  "global:keywords:86b00ac53d93e470c8852351d482e988": {
+    "return": "{\"high_level_keywords\": [\"\\u6b8b\\u8c61\", \"\\u672b\\u65e5\\u707e\\u96be\", \"\\u672c\\u8d28\\u8054\\u7cfb\"], \"low_level_keywords\": [\"\\u6b8b\\u8c61\", \"\\u672b\\u65e5\\u707e\\u96be\"]}",
+    "cache_type": "keywords",
+    "chunk_id": null,
+    "original_prompt": "“残象”和末日灾难有怎样的本质联系？",
+    "queryparam": {
+      "mode": "global",
+      "response_type": "Multiple Paragraphs",
+      "top_k": 40,
+      "chunk_top_k": 20,
+      "max_entity_tokens": 6000,
+      "max_relation_tokens": 8000,
+      "max_total_tokens": 30000,
+      "user_prompt": "",
+      "enable_rerank": true
+    },
+    "create_time": 1761552309,
+    "update_time": 1761552309,
+    "_id": "global:keywords:86b00ac53d93e470c8852351d482e988"
+  }
+}

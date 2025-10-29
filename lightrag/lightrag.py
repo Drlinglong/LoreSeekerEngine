@@ -2544,6 +2544,14 @@ class LightRAG:
             enable_rerank=param.enable_rerank,
         )
 
+        # Check if the graph is empty and force naive mode if necessary
+        all_entity_labels = await self.chunk_entity_relation_graph.get_all_labels()
+        if not all_entity_labels and data_param.mode != "naive":
+            logger.warning(
+                f"Knowledge graph is empty. Forcing query mode to 'naive' instead of '{data_param.mode}'."
+            )
+            data_param.mode = "naive"
+
         query_result = None
 
         if data_param.mode in ["local", "global", "hybrid", "mix"]:
@@ -2640,6 +2648,14 @@ class LightRAG:
         logger.debug(f"[aquery_llm] Query param: {param}")
 
         global_config = asdict(self)
+
+        # Check if the graph is empty and force naive mode if necessary
+        all_entity_labels = await self.chunk_entity_relation_graph.get_all_labels()
+        if not all_entity_labels and param.mode != "naive":
+            logger.warning(
+                f"Knowledge graph is empty. Forcing query mode to 'naive' instead of '{param.mode}'."
+            )
+            param.mode = "naive"
 
         try:
             query_result = None
